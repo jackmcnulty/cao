@@ -10,6 +10,10 @@ class ImageOpenSource(BaseSource):
     @classmethod
     def supported_extensions(cls):
         return ["png", "jpg", "jpeg", "bmp", "webp", "tiff", "ico"]
+    
+    @classmethod
+    def data_type(cls):
+        return "image"
 
 # Register all supported formats
 for ext in ImageOpenSource.supported_extensions():

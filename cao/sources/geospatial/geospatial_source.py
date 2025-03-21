@@ -10,6 +10,10 @@ class GeoDataSource(BaseSource):
     @classmethod
     def supported_extensions(cls):
         return ["geojson", "shp", "parquet"]
+    
+    @classmethod
+    def data_type(cls):
+        return "geodataframe"
 
 for ext in GeoDataSource.supported_extensions():
     ConverterRegistry.register_source(ext, GeoDataSource)

@@ -20,5 +20,9 @@ class GeoCSVSource(BaseSource):
     @classmethod
     def supported_extensions(cls):
         return ["csv"]
+    
+    @classmethod
+    def data_type(cls):
+        return "geodataframe"
 
 ConverterRegistry.register_source("csv", GeoCSVSource)

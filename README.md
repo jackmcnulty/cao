@@ -1,6 +1,6 @@
 # CAO — Convert Anything Offline
 
-CAO is a modular, offline-first command-line tool that lets you convert files between hundreds of formats — including images, text, audio, and more. It's designed to be clean, extensible, and completely offline with full plugin support.
+CAO is a modular, offline-first command-line tool that lets you convert files between hundreds of formats — including images, text, geospatial and (soon) more. It's designed to be clean, extensible, and completely offline with full plugin support.
 
 ---
 
@@ -8,10 +8,10 @@ CAO is a modular, offline-first command-line tool that lets you convert files be
 
 - Offline support — no internet required, ever
 - Image conversions (e.g., `png → jpg`, `webp → png`, etc.)
+- Geospatial data conversions (e.g., `shp → geojson`, etc.)
 - Text export from images or plain text
 - Plugin system for adding your own converters
 - Auto-discovery of sources and targets
-- Organized architecture with categories and base interfaces
 - ZIP plugin bundling and importing
 
 ---

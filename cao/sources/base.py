@@ -10,3 +10,8 @@ class BaseSource(ABC):
     def supported_extensions(cls):
         """Return a list of supported file extensions for this source"""
         return []
+
+    @classmethod
+    def data_type(cls):
+        """Return the data type that this source extracts"""
+        return None
