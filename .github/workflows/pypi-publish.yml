@@ -3,7 +3,8 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - 'v*'  # Only run on version tags like v0.1.0
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
