@@ -1,165 +1,171 @@
 # CAO — Convert Anything Offline
 
-CAO is a modular, offline-first command-line tool that lets you convert files between hundreds of formats — including images, text, geospatial and (soon) more. It's designed to be clean, extensible, and completely offline with full plugin support.
+**CAO** is a modular, offline-first command-line tool that lets you convert files between dozens (eventually hundreds) of formats — images, text, geospatial, and more. Designed to be **clean**, **extensible**, and completely **offline**, CAO also includes plugin support for community-driven converters.
 
 ---
 
 ## Features
 
-- Offline support — no internet required, ever
-- Image conversions (e.g., `png → jpg`, `webp → png`, etc.)
-- Geospatial data conversions (e.g., `shp → geojson`, etc.)
-- Text export from images or plain text
-- Plugin system for adding your own converters
+- Convert files across many format families (image, text, geospatial, etc.)
 - Auto-discovery of sources and targets
-- ZIP plugin bundling and importing
+- Plugin system with install/remove/reload support
+- Built-in support for common geospatial formats (GeoJSON, Shapefile, GeoParquet, CSV with lat/lon)
+- Architecture designed for scale — clean interfaces and grouping
+- Easy to test and extend
+- Fully offline — no internet required to use
 
 ---
 
 ## Installation
 
+CAO is currently distributed via GitHub.
+
 ```bash
-git clone https://github.com/your-username/cao.git
+git clone https://github.com/jackmcnulty/cao.git
 cd cao
 pip install -e .
 ```
 
-You must be using Python 3.8+ and have `pip`, `click`, and `Pillow` installed.
+You’ll need:
+
+- Python 3.8+
+- pip
+- Basic packages: `click`, `Pillow`, `geopandas`, `pandas`, `shapely`, `fiona`, `pyarrow` (check setup.py for full list)
 
 ---
 
-## Usage Overview
+## Usage
 
-### Convert a file
+### Convert files
 
 ```bash
 cao convert input.png output.jpg
-cao convert input.png output.txt
+cao convert input.txt output.png
+cao convert data.geojson output.csv
 ```
 
-### See what you can convert from a file type
+CAO will determine what type of content you're converting and route it to the right source and target.
+
+---
+
+### See what a format can convert to
 
 ```bash
 cao from png
+cao from geojson
+cao from csv
 ```
 
-Example output:
+Outputs something like:
 
 ```
-You can convert 'png' into:
-- bmp
-- ico
-- jpeg
-- jpg
-- png
-- tiff
-- txt
-- webp
+You can convert 'geojson' into:
+- csv
+- shp
+- parquet
 ```
+
+
 
 ---
 
 ## Plugin System
 
-CAO supports a powerful offline plugin system.
+CAO supports installable converters and features via plugins.
 
-### Plugin Commands
-
-| Command                            | Description                              |
-|------------------------------------|------------------------------------------|
-| `cao plugin list`                 | List all installed plugins               |
-| `cao plugin install <path>`       | Install a plugin from `.py` or `.zip`    |
-| `cao plugin remove <name>`        | Uninstall a plugin by name               |
-| `cao plugin reload`               | Reload all plugins without restarting    |
-| `cao plugin bundle [file]`        | Create a `.zip` of all installed plugins |
-
-### Installing a Plugin
-
-```bash
-cao plugin install ./plugins/my_plugin.py
-```
-
-Or install a bundle of plugins:
-
-```bash
-cao plugin install ./cao_plugins_bundle.zip
-```
-
-### Listing Installed Plugins
+### List installed plugins
 
 ```bash
 cao plugin list
 ```
 
-### Removing a Plugin
+### Install a plugin
+
+```bash
+cao plugin install ./my_plugin.py
+cao plugin install ./plugin_bundle.zip
+```
+
+### Remove a plugin
 
 ```bash
 cao plugin remove my_plugin
 ```
 
-### Reloading Plugins
+### Reload all plugins (dev-time hotload)
 
 ```bash
 cao plugin reload
 ```
 
-### Bundling Plugins
+### Bundle all installed plugins into a ZIP
 
 ```bash
-cao plugin bundle my_bundle.zip
+cao plugin bundle my_plugins.zip
 ```
 
 ---
 
-## Creating Your Own Plugin
+## Creating Your Own Converter
 
-### 1. Create a Python file like this:
+### Create a Source
 
 ```python
+from cao.sources.base import BaseSource
 from cao.registry import ConverterRegistry
 
-class MySource:
+class HelloSource(BaseSource):
     def extract(self, path):
-        return {"type": "text", "data": "Hello from plugin!"}
+        return {"type": "text", "data": "Hello from source"}
 
-ConverterRegistry.register_source("my", MySource)
+    @classmethod
+    def supported_extensions(cls):
+        return ["hello"]
 
-class MyTarget:
+    @classmethod
+    def data_type(cls):
+        return "text"
+
+ConverterRegistry.register_source("hello", HelloSource)
+```
+
+### Create a Target
+
+```python
+from cao.targets.base import BaseTarget
+from cao.registry import ConverterRegistry
+
+class UpperTextTarget(BaseTarget):
+    def write(self, data, path):
+        with open(path, "w") as f:
+            f.write(data["data"].upper())
+
     @staticmethod
     def accepts_type(data_type):
         return data_type == "text"
 
-    def write(self, data, path):
-        with open(path, "w") as f:
-            f.write(f"Plugin says: {data['data']}")
-
-ConverterRegistry.register_target("cool", lambda ext: MyTarget())
-```
-
-### 2. Install it
-
-```bash
-cao plugin install ./my_plugin.py
-```
-
-### 3. Use it
-
-```bash
-cao convert input.my output.cool
+ConverterRegistry.register_target("txt", lambda ext: UpperTextTarget())
 ```
 
 ---
 
-## Project Structure (Simplified)
+## 📁 Project Structure
 
 ```
 cao/
-├── cli.py                  ← CLI entry point
-├── registry.py             ← Converter & plugin manager
-├── engine.py               ← Core conversion logic
-├── sources/                ← Organized by type (image/, text/, etc.)
-├── targets/                ← Organized by type (image/, text/, etc.)
-├── plugins/                ← User-added plugin folder
+├── cao/
+│   ├── cli.py
+│   ├── engine.py
+│   ├── registry.py
+│   ├── sources/
+│   │   ├── image/
+│   │   ├── geospatial/
+│   ├── targets/
+│   │   ├── text/
+│   │   ├── image/
+│   │   ├── geospatial/
+│   ├── plugins/
+├── README.md
 ├── setup.py
 ├── pyproject.toml
 ```
@@ -168,29 +174,21 @@ cao/
 
 ## Contributing
 
-- All sources should inherit from `BaseSource`
-- All targets should inherit from `BaseTarget`
-- Register converters using `ConverterRegistry.register_source()` or `register_target()`
+Want to contribute?
 
-We welcome contributions and plugin creators.
-
----
-
-## Coming Soon
-
-- PDF support
-- DOCX/Text document pipelines
-- Audio conversion family
-- Web UI for plugin browsing
-
----
-
-## Credits
-
-Built with inspiration from tools like ImageMagick, ffmpeg, and Pandoc — but offline, modular, and Pythonic.
+- See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to add new converters
+- Keep things modular — one class per source/target, grouped by format type
+- Follow naming conventions and interface expectations
+- PRs are welcome!
 
 ---
 
 ## License
 
-MIT License. Use it, hack it, ship it.
+MIT License — free to use, modify, and share.
+
+---
+
+## Roadmap
+
+- Lots of new converters

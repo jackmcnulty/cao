@@ -1,41 +1,48 @@
 # Contributing to CAO
 
-Thanks for your interest in contributing to CAO — **Convert Anything Offline**. Whether you're fixing a bug, adding a new converter, improving docs, or building a plugin, you're helping make CAO better for everyone.
+Thank you for your interest in contributing to CAO (Convert Anything Offline)! This project is designed to be clean, extensible, and offline-first. Contributions are welcome in the form of new converters, plugin tools, bug fixes, documentation, and feature ideas.
 
 ---
 
 ## Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
-- [Creating Converters](#creating-converters)
-  - [Sources](#sources)
-  - [Targets](#targets)
-- [Plugins](#plugins)
-- [Testing Your Contribution](#testing-your-contribution)
-- [Pull Requests](#pull-requests)
-
----
-
-## Code of Conduct
-
-We expect contributors to follow basic standards of professionalism, respect, and collaboration. Be kind, helpful, and constructive.
+- [Creating a Source](#creating-a-source)
+- [Creating a Target](#creating-a-target)
+- [Plugin-Based Converters](#plugin-based-converters)
+- [Code Style](#code-style)
+- [Opening a Pull Request](#opening-a-pull-request)
 
 ---
 
 ## Getting Started
 
-1. **Fork the repo** and clone your fork.
-2. Set up the dev environment:
+1. Clone the repository:
 
-```bash
-git clone https://github.com/your-username/cao.git
-cd cao
-pip install -e .
-```
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/cao.git
+   cd cao
+   ```
 
-> You must have Python 3.8+ installed. Dependencies include `click`, `Pillow`, and optionally others depending on your plugin.
+2. Set up a virtual environment:
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   pip install -e .
+   ```
+
+4. Test that it works:
+
+   ```bash
+   cao --help
+   ```
 
 ---
 
@@ -43,129 +50,121 @@ pip install -e .
 
 ```
 cao/
-├── cli.py                  # CLI entry point
-├── registry.py             # Core registry for sources/targets/plugins
-├── engine.py               # File conversion logic
-├── sources/                # Organized by category (e.g., image/, text/)
-├── targets/                # Organized by category
-├── plugins/                # User-installed plugins
-├── tests/                  # (optional) Unit tests
-├── setup.py
-├── pyproject.toml
+├── sources/
+│   ├── image/
+│   ├── geospatial/
+│   └── text/
+├── targets/
+│   ├── image/
+│   ├── geospatial/
+│   └── text/
+├── plugins/
+├── engine.py
+├── registry.py
+├── cli.py
 ```
+
+Each format (or format group) has its own source and target implementation.
 
 ---
 
-## Creating Converters
+## Creating a Source
 
-### Sources
-
-Sources extract raw content from a specific file type (e.g. PNG, TXT, DOCX).
-
-1. Create a file in `cao/sources/<category>/your_source.py`
-2. Subclass `BaseSource`
-3. Implement the `extract(path)` method
-4. Register with `ConverterRegistry.register_source("ext", YourSource)`
-
-Example:
+To create a new source (a file reader), subclass `BaseSource`:
 
 ```python
 from cao.sources.base import BaseSource
 from cao.registry import ConverterRegistry
 
-class PNGSource(BaseSource):
+class MyCustomSource(BaseSource):
     def extract(self, path):
-        from PIL import Image
-        img = Image.open(path)
-        return {"type": "image", "data": img}
+        return {"type": "text", "data": open(path).read()}
 
-ConverterRegistry.register_source("png", PNGSource)
+    @classmethod
+    def supported_extensions(cls):
+        return ["xyz"]
+
+    @classmethod
+    def data_type(cls):
+        return "text"
 ```
 
-### Targets
+- `supported_extensions()` returns a list of file extensions this source supports.
+- `data_type()` is required for CLI introspection and compatibility checks. It must return a string that matches the data types your targets will accept.
 
-Targets take extracted content and write it to a specific file format.
+Register it:
 
-1. Create a file in `cao/targets/<category>/your_target.py`
-2. Subclass `BaseTarget`
-3. Implement:
-   - `write(data, path)`
-   - `accepts_type(data_type)`
-4. Register with `ConverterRegistry.register_target("ext", lambda ext: YourTarget(ext))`
+```python
+ConverterRegistry.register_source("xyz", MyCustomSource)
+```
 
-Example:
+---
+
+## Creating a Target
+
+To create a new target (a file writer), subclass `BaseTarget`:
 
 ```python
 from cao.targets.base import BaseTarget
 from cao.registry import ConverterRegistry
 
-class JPGTarget(BaseTarget):
-    def __init__(self, format):
-        self.format = format
-
+class MyCustomTarget(BaseTarget):
     def write(self, data, path):
-        data["data"].save(path, format="JPEG")
+        with open(path, "w") as f:
+            f.write(data["data"].upper())
 
     @staticmethod
     def accepts_type(data_type):
-        return data_type == "image"
+        return data_type == "text"
+```
 
-ConverterRegistry.register_target("jpg", lambda ext: JPGTarget(ext))
+Register it:
+
+```python
+ConverterRegistry.register_target("abc", lambda ext: MyCustomTarget(ext))
 ```
 
 ---
 
-## Plugins
+## Plugin-Based Converters
 
-You can build a plugin by creating a `.py` file that registers a new source or target using the `ConverterRegistry`.
+You can build sources and targets as standalone `.py` files or bundles and load them using:
 
-To install:
 ```bash
-cao plugin install ./your_plugin.py
+cao plugin install ./my_converter.py
 ```
 
-To test:
-```bash
-cao convert input.yourformat output.target
-```
+All plugin converters must follow the same interface as above and use `ConverterRegistry.register_source` or `register_target`.
 
-To remove:
-```bash
-cao plugin remove your_plugin
-```
+You can also remove or reload plugins:
 
-To bundle:
 ```bash
-cao plugin bundle my_plugins.zip
+cao plugin remove my_converter
+cao plugin reload
 ```
 
 ---
 
-## Testing Your Contribution
+## Code Style
 
-Run basic conversion commands manually:
-
-```bash
-cao convert input.png output.jpg
-cao from png
-cao plugin list
-```
-
-For automated testing, you may place test files in a future `tests/` directory and use `pytest`.
+- Follow PEP8 for Python formatting.
+- One class per file is strongly encouraged.
+- Group related converters into folders (e.g., `geospatial`, `image`, `text`).
+- Keep debug or logging output behind a flag if needed.
+- Keep source and target logic cleanly separated.
 
 ---
 
-## Pull Requests
+## Opening a Pull Request
 
-1. Fork the repo and create a new branch.
-2. Commit your changes with clear messages.
-3. Submit a pull request describing:
-   - What you added/changed
-   - Why it’s useful
-   - How to test it (if applicable)
+1. Fork the repository.
+2. Create a new branch for your contribution.
+3. Make your changes and write a clear commit message.
+4. Ensure the project still installs and `cao --help` works.
+5. Open a pull request with a description of what you added and why.
 
-We’ll review your PR and may request changes or merge it.
+We appreciate all clean, thoughtful contributions that improve CAO’s capabilities or architecture.
 
 ---
 
-Thanks for contributing to CAO!
+Thanks for contributing!
