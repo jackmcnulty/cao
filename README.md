@@ -149,7 +149,7 @@ ConverterRegistry.register_target("txt", lambda ext: UpperTextTarget())
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 cao/
