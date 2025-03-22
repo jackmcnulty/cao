@@ -5,15 +5,23 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 class GeoCSVSource(BaseSource):
-    def extract(self, path):
+    def extract(self, path, options=None):
+        options = options or {}
+        print("[DEBUG] Options received in GeoCSVSource:", options)
         df = pd.read_csv(path)
-        if "latitude" not in df.columns or "longitude" not in df.columns:
-            raise ValueError(
-                "CSV must contain 'latitude' and 'longitude' columns.\n"
-                "Please rename your columns or preprocess your file accordingly."
-            )
 
-        geometry = [Point(xy) for xy in zip(df["longitude"], df["latitude"])]
+        lat_col = options.get('lat_col')
+        lon_col = options.get('lon_col')
+
+        if not lat_col or not lon_col:
+            raise ValueError("You must specify 'lat_col' and 'lon_col' options using -o lat_col=<latitude> -o lon_col=<longitude>.")
+        
+        if lat_col not in df.columns:
+            raise ValueError(f"Column '{lat_col}' not found in CSV file.")
+        if lon_col not in df.columns:
+            raise ValueError(f"Column '{lon_col}' not found in CSV file.")
+
+        geometry = [Point(xy) for xy in zip(df[lon_col], df[lat_col])]
         gdf = gpd.GeoDataFrame(df, geometry=geometry)
         return {"type": "geodataframe", "data": gdf}
 

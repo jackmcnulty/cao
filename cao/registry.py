@@ -10,7 +10,7 @@ class ConverterRegistry:
 
     @classmethod
     def register_source(cls, ext, klass):
-        cls.sources[ext.lower()] = klass
+        cls.sources[ext.lower()] = lambda: klass()
 
     @classmethod
     def register_target(cls, ext, factory_fn):

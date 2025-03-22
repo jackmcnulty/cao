@@ -3,7 +3,11 @@ from cao.registry import ConverterRegistry
 import geopandas as gpd
 
 class GeoDataSource(BaseSource):
-    def extract(self, path):
+    def extract(self, path, options=None):
+        options = options or {}
+        if options:
+            raise ValueError("GeoDataFrame does not accept any options at this moment. Submit a PR to add support for options.")
+        
         gdf = gpd.read_file(path)
         return {"type": "geodataframe", "data": gdf}
 
