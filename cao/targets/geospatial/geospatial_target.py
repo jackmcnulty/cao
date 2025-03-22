@@ -5,7 +5,10 @@ class GeoDataTarget(BaseTarget):
     def __init__(self, format):
         self.format = format.lower()
 
-    def write(self, data, path):
+    def write(self, data, path, options=None):
+        options = options or {}
+        if options:
+            raise ValueError(f"GeoDataFrame does not accept any options at this moment. Submit a PR to add support for options.")
         gdf = data["data"]
 
         if self.format == "parquet":

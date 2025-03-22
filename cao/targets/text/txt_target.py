@@ -5,7 +5,10 @@ class TXTTarget(BaseTarget):
     def __init__(self, format):
         self.format = format.lower()
 
-    def write(self, data, path):
+    def write(self, data, path, options=None):
+        options = options or {}
+        if options:
+            raise ValueError(f"TXT does not accept any options at this moment. Submit a PR to add support for options.")
         if data["type"] == "image":
             img = data["data"]
             info = f"Image size: {img.size}\nMode: {img.mode}"

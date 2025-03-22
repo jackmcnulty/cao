@@ -16,9 +16,21 @@ def cli():
 @cli.command()
 @click.argument('input_path')
 @click.argument('output_path')
-def convert(input_path, output_path):
+@click.option("--option", "-o", multiple=True, type=str, help="Pass key=value options to converters.")
+def convert(input_path, output_path, option):
     """Convert a file from one format to another."""
-    convert_engine(input_path, output_path)
+
+    options = {}
+    for o in option:
+        if "=" not in o:
+            raise click.BadParameter(f"Option must be in key=value format: {o}")
+        k, v = o.split("=", 1)
+        options[k.strip()] = v.strip()
+
+    try:
+        convert_engine(input_path, output_path, **options)
+    except Exception as e:
+        click.secho(f"Error: {e}", fg="red", bold=True)
 
 @cli.command("from")
 @click.argument('ext')
